@@ -10,6 +10,8 @@
 logical trollp_(arg)
 integer arg;
 {
+    arg = arg;
+
     /* System generated locals */
     logical ret_val;
 
@@ -170,6 +172,8 @@ L10:
 logical cyclop_(arg)
 integer arg;
 {
+    arg = arg;
+
     /* System generated locals */
     integer i__1, i__2;
     logical ret_val;
@@ -309,6 +313,8 @@ L500:
 logical thiefp_(arg)
 integer arg;
 {
+    arg = arg;
+
     /* System generated locals */
     integer i__1;
     logical ret_val;

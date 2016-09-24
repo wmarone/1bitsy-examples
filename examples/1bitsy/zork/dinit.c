@@ -17,23 +17,28 @@
 
 extern void srand P((unsigned int));
 
-FILE *dbfile;
+#if 0                           // XXX kbob
+    FILE *dbfile;
 
-#ifndef TEXTFILE
-#ifdef __AMOS__
-#define TEXTFILE "lib:dtextc.dat"
-#else /* ! __AMOS__ */
-#ifdef unix
-#define TEXTFILE "/usr/games/lib/dunlib/dtextc.dat"
-#else /* ! unix */
- I need a definition for TEXTFILE
-#endif /* ! unix */
-#endif /* ! __AMOS__ */
-#endif /* ! TEXTFILE */
+    #ifndef TEXTFILE
+    #ifdef __AMOS__
+    #define TEXTFILE "lib:dtextc.dat"
+    #else /* ! __AMOS__ */
+    #ifdef unix
+    #define TEXTFILE "/usr/games/lib/dunlib/dtextc.dat"
+    #else /* ! unix */
+    #error I need a definition for TEXTFILE
+    #endif /* ! unix */
+    #endif /* ! __AMOS__ */
+    #endif /* ! TEXTFILE */
 
-#ifndef LOCALTEXTFILE
-#define LOCALTEXTFILE "dtextc.dat"
-#endif
+    #ifndef LOCALTEXTFILE
+    #define LOCALTEXTFILE "dtextc.dat"
+    #endif
+#else
+    #define TEXTFILE "[textfile]"
+    FILE *dbfile;
+#endif  // XXX kbob
 
 /* Read a single two byte integer from the index file */
 
@@ -43,10 +48,10 @@ FILE *dbfile;
 
 /* Read a number of two byte integers from the index file */
 
-static void rdints(c, pi, indxfile)
-integer c;
-integer *pi;
-FILE *indxfile;
+static void rdints(integer c, integer *pi, FILE *indxfile)
+// integer c;
+// integer *pi;
+// FILE *indxfile;
 {
     integer ch;	/* Local variable for rdint */
 
@@ -58,10 +63,10 @@ FILE *indxfile;
  * pairs.
  */
 
-static void rdpartialints(c, pi, indxfile)
-integer c;
-integer *pi;
-FILE *indxfile;
+static void rdpartialints(integer c, integer *pi, FILE *indxfile)
+// integer c;
+// integer *pi;
+// FILE *indxfile;
 {
     integer ch;	/* Local variable for rdint */
 
@@ -85,10 +90,10 @@ FILE *indxfile;
 
 /* Read a number of one byte flags from the index file */
 
-static void rdflags(c, pf, indxfile)
-integer c;
-logical *pf;
-FILE *indxfile;
+static void rdflags(integer c, logical *pf, FILE *indxfile)
+// integer c;
+// logical *pf;
+// FILE *indxfile;
 {
     while (c-- != 0)
 	*pf++ = getc(indxfile);
@@ -102,6 +107,8 @@ logical init_()
 
     /* Local variables */
     integer xmax, r2max, dirmax, recno;
+    dirmax = 0; dirmax = dirmax;
+    recno = 0; recno = recno;
     integer i, j, k;
     register integer ch;
     register FILE *indxfile;
@@ -334,16 +341,20 @@ L10000:
 
 /* NOW RESTORE FROM EXISTING INDEX FILE. */
 
-#ifdef __AMOS__
-    if ((dbfile = fdopen(ropen(LOCALTEXTFILE, 0), BINREAD)) == NULL &&
-	(dbfile = fdopen(ropen(TEXTFILE, 0), BINREAD)) == NULL)
-#else
-    if ((dbfile = fopen(LOCALTEXTFILE, BINREAD)) == NULL &&
-	(dbfile = fopen(TEXTFILE, BINREAD)) == NULL)
-#endif
-	goto L1950;
+#if 0                           // XXX kbob
+    #ifdef __AMOS__
+        if ((dbfile = fdopen(ropen(LOCALTEXTFILE, 0), BINREAD)) == NULL &&
+            (dbfile = fdopen(ropen(TEXTFILE, 0), BINREAD)) == NULL)
+    #else
+        if ((dbfile = fopen(LOCALTEXTFILE, BINREAD)) == NULL &&
+            (dbfile = fopen(TEXTFILE, BINREAD)) == NULL)
+    #endif
+            goto L1950;
 
-    indxfile = dbfile;
+        indxfile = dbfile;
+#else
+    goto L1950;
+#endif  // XXX kbob
 
     i = rdint(indxfile);
     j = rdint(indxfile);

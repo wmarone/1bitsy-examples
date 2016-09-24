@@ -31,6 +31,7 @@ integer ri;
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     const char *z, *z2;
     integer i, j;
     integer k;

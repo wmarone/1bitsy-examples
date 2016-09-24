@@ -20,6 +20,7 @@ void fightd_()
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer i, j, ra;
     integer obj;
     integer res;
@@ -207,7 +208,9 @@ integer out;
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer i, j, oa, ra, od, mi, dv, def;
+    oa = 0; oa = oa;
     integer tbl;
     integer att, res;
     integer dweap;

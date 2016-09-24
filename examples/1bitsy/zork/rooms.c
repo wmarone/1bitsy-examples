@@ -16,6 +16,7 @@ integer ri;
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer i;
     integer j;
 

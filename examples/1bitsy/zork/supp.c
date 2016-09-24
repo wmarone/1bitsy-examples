@@ -25,8 +25,8 @@ extern int rand P((void));
  * 4.0 leaves out the const in their prototype.  Damn them.
  */
 
-extern time_t time P((time_t *));
-extern struct tm *localtime ();
+// extern time_t time P((time_t *));
+// extern struct tm *localtime ();
 
 /* Terminate the game */
 

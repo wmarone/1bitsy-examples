@@ -19,6 +19,7 @@ integer arg;
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer i;
     integer mroom;
     integer av;

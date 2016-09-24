@@ -19,6 +19,7 @@ void game_()
 {
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer i;
 
 /* START UP, DESCRIBE CURRENT LOCATION. */
@@ -210,6 +211,7 @@ logical flag;
 {
     /* Local variables */
     logical f;
+    f = 0; f = f;
 
     if (! (flag)) {
 	rspeak_(341);

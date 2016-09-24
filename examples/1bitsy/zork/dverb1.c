@@ -104,11 +104,14 @@ L700:
 logical drop_(z)
 logical z;
 {
+    z = z;
+
     /* System generated locals */
     logical ret_val;
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer i, x;
 
     ret_val = TRUE_;
@@ -193,6 +196,8 @@ L1000:
 logical put_(flg)
 logical flg;
 {
+    flg = flg;
+
     /* System generated locals */
     logical ret_val;
 
@@ -341,6 +346,7 @@ integer v;
     logical f;
     integer i;
     logical f1;
+    f1 = 0; f1 = f1;
     integer savep, saveh;
 
     f = TRUE_;

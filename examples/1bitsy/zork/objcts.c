@@ -21,6 +21,7 @@ integer arg;
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer flobts, i;
     integer j, av, io, ir, iz;
     integer odi2 = 0, odo2 = 0;

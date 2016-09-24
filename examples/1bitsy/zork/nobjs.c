@@ -15,16 +15,20 @@ logical nobjs_(ri, arg)
 integer ri;
 integer arg;
 {
+    arg = arg;
+
     /* System generated locals */
     integer i__1, i__2;
     logical ret_val;
 
     /* Local variables */
     logical f;
+    f = 0; f = f;
     integer target;
     integer i;
     integer j;
     integer av, wl;
+    av= 0; av = av;
     integer nxt, odi2 = 0, odo2 = 0;
 
     if (prsvec_1.prso != 0) {

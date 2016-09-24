@@ -7,12 +7,12 @@
 #define EXTERN
 #define INIT
 
+#include <stdlib.h>
+
 #include "funcs.h"
 #include "vars.h"
 
-void main(argc, argv)
-int argc;
-char **argv;
+int main(void)
 {
 /* 1) INITIALIZE DATA STRUCTURES */
 /* 2) PLAY GAME */
@@ -24,3 +24,9 @@ char **argv;
     exit_();
 /* 						!DONE */
 } /* MAIN__ */
+
+extern void _fini(void);
+extern void _fini(void)
+{
+    abort();
+}
