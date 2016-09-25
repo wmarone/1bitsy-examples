@@ -17,16 +17,23 @@
 ## along with this library.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-SOURCES := actors.c ballop.c clockr.c demons.c dgame.c dinit.c dso1.c	\
-	   dso2.c dso3.c dso4.c dso5.c dso6.c dso7.c dsub.c dverb1.c	\
-	   dverb2.c gdt.c lightp.c local.c nobjs.c np.c np1.c np2.c	\
-	   np3.c nrooms.c objcts.c rooms.c sobjs.c supp.c sverbs.c	\
-	   verbs.c villns.c
-OBJS    := $(patsubst %.cpp, %.o, $(SOURCES:.c=.o))
-
-BINARY = dmain
-
-LDSCRIPT = ../stm32f4-1bitsy.ld
+SOURCES  := actors.c ballop.c clockr.c demons.c dgame.c dinit.c		\
+	    dmain.c dso1.c dso2.c dso3.c dso4.c dso5.c dso6.c dso7.c	\
+	    dsub.c dverb1.c dverb2.c gdt.c lightp.c local.c nobjs.c	\
+	    np.c np1.c np2.c np3.c nrooms.c objcts.c rooms.c sobjs.c	\
+	    supp.c sverbs.c verbs.c villns.c
+OBJS     := $(SOURCES:.c=.o)
+BINARY   := zork
+LDSCRIPT := ../stm32f4-1bitsy.ld
+CPPFLAGS += -DALLOW_GDT
 
 include ../Makefile.include
 CPPFLAGS += -Wno-parentheses -Werror
+
+textarray.h: gen-textarray.py dtextc.dat
+	python gen-textarray.py dtextc.dat > $@
+
+dinit.o: textarray.h
+
+clean::
+	$(Q)$(RM) textarray.h

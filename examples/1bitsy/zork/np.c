@@ -9,9 +9,11 @@
 #include "funcs.h"
 #include "vars.h"
 
+#ifdef ALLOW_SYSTEM
 /* This declaration is here since many systems don't have <stdlib.h> */
 
 extern int system P((const char *));
+#endif
 
 static logical lex_ P((char *, integer *, integer *, logical));
 
@@ -38,10 +40,12 @@ L90:
 	exit_();
     more_input();
 
+#ifdef ALLOW_SYSTEM
     if (buffer[0] == '!') {
 	system(buffer + 1);
 	goto L5;
     }
+#endif
 
     zlast = buffer - 1;
     for (z = buffer; *z != '\0' && *z != '\n'; z++) {

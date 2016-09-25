@@ -4,13 +4,17 @@
 /* ALL RIGHTS RESERVED, COMMERCIAL USAGE STRICTLY PROHIBITED */
 /* WRITTEN BY R. M. SUPNIK */
 
-#include <stdio.h>
+//#include <stdio.h>
 #include "funcs.h"
 #include "vars.h"
 
-/* Do all systems have <string.h>?  Don't use it, just in case */
+#if 1                           // kbob: 35 years later...
+    #include <string.h>
+#else
+    /* Do all systems have <string.h>?  Don't use it, just in case */
 
-extern int strcmp P((const char *, const char *));
+    extern int strcmp P((const char *, const char *));
+#endif
 
 static logical xvehic_ P((integer));
 static void xendmv_ P((logical));

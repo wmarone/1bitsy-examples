@@ -44,6 +44,9 @@ typedef int logical;
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #define max(a,b) ((a) >= (b) ? (a) : (b))
 
+extern void
+	zork_main P((void));
+
 extern logical
 	protected P((void)),
 	wizard P((void));

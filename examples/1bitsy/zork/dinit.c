@@ -4,18 +4,22 @@
 /* ALL RIGHTS RESERVED, COMMERCIAL USAGE STRICTLY PROHIBITED */
 /* WRITTEN BY R. M. SUPNIK */
 
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 
 #ifdef __AMOS__
+#error "What is AMOS?"
+// https://en.wikipedia.org/wiki/Alpha_Microsystems
 #include <amos.h>
 #endif
 
 #include "funcs.h"
 #include "vars.h"
-
-/* This is here to avoid depending on the existence of <stdlib.h> */
-
-extern void srand P((unsigned int));
 
 #if 0                           // XXX kbob
     FILE *dbfile;
@@ -36,8 +40,65 @@ extern void srand P((unsigned int));
     #define LOCALTEXTFILE "dtextc.dat"
     #endif
 #else
-    #define TEXTFILE "[textfile]"
+    #include "textarray.h"
+    #define TEXTFILE "[flash]"
     FILE *dbfile;
+
+    typedef struct textarray_cookie {
+        bool ok;
+        size_t pos;
+    } textarray_cookie;
+
+    static ssize_t
+    textarray_reader(void *cookie, char *buffer, size_t size)
+    {
+        textarray_cookie *cp = cookie;
+        assert(cp->ok);
+        assert(cp->pos <= textarray_size);
+        if (size > textarray_size - cp->pos)
+            size = textarray_size - cp->pos;
+        memcpy(buffer, textarray + cp->pos, size);
+        cp->pos += size;
+        return (ssize_t)size;
+    }
+
+    static int textarray_seeker(void *cookie, off_t *position, int whence)
+    {
+        textarray_cookie *cp = cookie;
+        off_t new_pos;
+        switch (whence) {
+
+        case SEEK_SET:
+            new_pos = *position;
+            break;
+
+        case SEEK_CUR:
+            new_pos = cp->pos + *position;
+            break;
+
+        case SEEK_END:
+            new_pos = (off_t)cp->pos + (off_t)textarray_size + *position;
+            break;
+
+        default:
+            assert(0 && "unknown whence value");
+        }
+        if (new_pos < 0 || (size_t)new_pos > textarray_size)
+            return -1;
+        cp->pos = *position = new_pos;
+        return 0;
+    }
+
+    static FILE *open_textarray(void)
+    {
+        static cookie_io_functions_t fns;
+        fns.read = textarray_reader;
+        fns.seek = textarray_seeker;
+
+        FILE *f = fopencookie(NULL, "rb", fns);
+        return f;
+    }
+
 #endif  // XXX kbob
 
 /* Read a single two byte integer from the index file */
@@ -49,9 +110,6 @@ extern void srand P((unsigned int));
 /* Read a number of two byte integers from the index file */
 
 static void rdints(integer c, integer *pi, FILE *indxfile)
-// integer c;
-// integer *pi;
-// FILE *indxfile;
 {
     integer ch;	/* Local variable for rdint */
 
@@ -64,9 +122,6 @@ static void rdints(integer c, integer *pi, FILE *indxfile)
  */
 
 static void rdpartialints(integer c, integer *pi, FILE *indxfile)
-// integer c;
-// integer *pi;
-// FILE *indxfile;
 {
     integer ch;	/* Local variable for rdint */
 
@@ -91,9 +146,6 @@ static void rdpartialints(integer c, integer *pi, FILE *indxfile)
 /* Read a number of one byte flags from the index file */
 
 static void rdflags(integer c, logical *pf, FILE *indxfile)
-// integer c;
-// logical *pf;
-// FILE *indxfile;
 {
     while (c-- != 0)
 	*pf++ = getc(indxfile);
@@ -351,10 +403,15 @@ L10000:
     #endif
             goto L1950;
 
-        indxfile = dbfile;
 #else
-    goto L1950;
+
+        dbfile = open_textarray();
+        if (dbfile == NULL)
+            goto L1950;
+
 #endif  // XXX kbob
+
+    indxfile = dbfile;
 
     i = rdint(indxfile);
     j = rdint(indxfile);

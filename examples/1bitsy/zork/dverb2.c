@@ -14,6 +14,8 @@ static integer cxappl_ P((integer));
 
 void savegm_()
 {
+    goto L100;                  // XXX SAVE unimplemented
+
     /* Local variables */
     integer i;
     FILE *e;
@@ -105,6 +107,8 @@ L100:
 
 void rstrgm_()
 {
+    goto L100;                  // XXX RESTORE unimplemented
+
     /* Local variables */
     integer i, j, k;
     FILE *e;
