@@ -7,12 +7,10 @@
 #define EXTERN
 #define INIT
 
-#include <stdlib.h>
-
 #include "funcs.h"
 #include "vars.h"
 
-int main(void)
+void zork_main(void)
 {
 /* 1) INITIALIZE DATA STRUCTURES */
 /* 2) PLAY GAME */
@@ -25,8 +23,7 @@ int main(void)
 /* 						!DONE */
 } /* MAIN__ */
 
-extern void _fini(void);
-extern void _fini(void)
-{
-    abort();
-}
+// extern void _fini(void);
+// extern void _fini(void)
+// {
+// }
