@@ -40,6 +40,6 @@ extern usbd_device *usbdev;
 void cdcacm_init(void);
 /* Returns current usb configuration, or 0 if not configured. */
 int cdcacm_get_config(void);
-int cdcacm_get_dtr(void);
+// int cdcacm_get_dtr(void);
 
 #endif

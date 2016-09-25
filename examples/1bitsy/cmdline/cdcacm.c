@@ -26,12 +26,12 @@
  * The device's unique id is used as the USB serial number string.
  */
 
-#include "general.h"
-#include "gdb_if.h"
+// #include "general.h"
+// #include "gdb_if.h"
 #include "cdcacm.h"
-#if defined(PLATFORM_HAS_TRACESWO)
-#	include "traceswo.h"
-#endif
+// #if defined(PLATFORM_HAS_TRACESWO)
+// #	include "traceswo.h"
+// #endif
 #include "usbuart.h"
 #include "serialno.h"
 
@@ -39,19 +39,24 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
-#include <libopencm3/usb/dfu.h>
+//#include <libopencm3/usb/dfu.h>
 #include <stdlib.h>
 
-#define DFU_IF_NO 4
+// #define DFU_IF_NO 4
+
+// Misc. definitions from unrelated parts of blackmagic.
+#define BOARD_IDENT "1Bitsy + cmdline"
+#define USB_DRIVER stm32f107_usb_driver
+#define USB_IRQ NVIC_USB_LP_CAN_RX0_IRQ
 
 usbd_device * usbdev;
 
 static int configured;
-static int cdcacm_gdb_dtr = 1;
+// static int cdcacm_gdb_dtr = 1;
 
 static void cdcacm_set_modem_state(usbd_device *dev, int iface, bool dsr, bool dcd);
 
-static const struct usb_device_descriptor dev = {
+static const struct usb_device_descriptor usbdd = {
 	.bLength = USB_DT_DEVICE_SIZE,
 	.bDescriptorType = USB_DT_DEVICE,
 	.bcdUSB = 0x0200,
@@ -68,110 +73,110 @@ static const struct usb_device_descriptor dev = {
 	.bNumConfigurations = 1,
 };
 
-/* This notification endpoint isn't implemented. According to CDC spec its
- * optional, but its absence causes a NULL pointer dereference in Linux cdc_acm
- * driver. */
-static const struct usb_endpoint_descriptor gdb_comm_endp[] = {{
-	.bLength = USB_DT_ENDPOINT_SIZE,
-	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x82,
-	.bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
-	.wMaxPacketSize = 16,
-	.bInterval = 255,
-}};
+// /* This notification endpoint isn't implemented. According to CDC spec its
+//  * optional, but its absence causes a NULL pointer dereference in Linux cdc_acm
+//  * driver. */
+// static const struct usb_endpoint_descriptor gdb_comm_endp[] = {{
+// 	.bLength = USB_DT_ENDPOINT_SIZE,
+// 	.bDescriptorType = USB_DT_ENDPOINT,
+// 	.bEndpointAddress = 0x82,
+// 	.bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
+// 	.wMaxPacketSize = 16,
+// 	.bInterval = 255,
+// }};
 
-static const struct usb_endpoint_descriptor gdb_data_endp[] = {{
-	.bLength = USB_DT_ENDPOINT_SIZE,
-	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x01,
-	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
-	.wMaxPacketSize = CDCACM_PACKET_SIZE,
-	.bInterval = 1,
-}, {
-	.bLength = USB_DT_ENDPOINT_SIZE,
-	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x81,
-	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
-	.wMaxPacketSize = CDCACM_PACKET_SIZE,
-	.bInterval = 1,
-}};
+// static const struct usb_endpoint_descriptor gdb_data_endp[] = {{
+// 	.bLength = USB_DT_ENDPOINT_SIZE,
+// 	.bDescriptorType = USB_DT_ENDPOINT,
+// 	.bEndpointAddress = 0x01,
+// 	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
+// 	.wMaxPacketSize = CDCACM_PACKET_SIZE,
+// 	.bInterval = 1,
+// }, {
+// 	.bLength = USB_DT_ENDPOINT_SIZE,
+// 	.bDescriptorType = USB_DT_ENDPOINT,
+// 	.bEndpointAddress = 0x81,
+// 	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
+// 	.wMaxPacketSize = CDCACM_PACKET_SIZE,
+// 	.bInterval = 1,
+// }};
 
-static const struct {
-	struct usb_cdc_header_descriptor header;
-	struct usb_cdc_call_management_descriptor call_mgmt;
-	struct usb_cdc_acm_descriptor acm;
-	struct usb_cdc_union_descriptor cdc_union;
-} __attribute__((packed)) gdb_cdcacm_functional_descriptors = {
-	.header = {
-		.bFunctionLength = sizeof(struct usb_cdc_header_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_HEADER,
-		.bcdCDC = 0x0110,
-	},
-	.call_mgmt = {
-		.bFunctionLength =
-			sizeof(struct usb_cdc_call_management_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_CALL_MANAGEMENT,
-		.bmCapabilities = 0,
-		.bDataInterface = 1,
-	},
-	.acm = {
-		.bFunctionLength = sizeof(struct usb_cdc_acm_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_ACM,
-		.bmCapabilities = 2, /* SET_LINE_CODING supported */
-	},
-	.cdc_union = {
-		.bFunctionLength = sizeof(struct usb_cdc_union_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_UNION,
-		.bControlInterface = 0,
-		.bSubordinateInterface0 = 1,
-	 }
-};
+// static const struct {
+// 	struct usb_cdc_header_descriptor header;
+// 	struct usb_cdc_call_management_descriptor call_mgmt;
+// 	struct usb_cdc_acm_descriptor acm;
+// 	struct usb_cdc_union_descriptor cdc_union;
+// } __attribute__((packed)) gdb_cdcacm_functional_descriptors = {
+// 	.header = {
+// 		.bFunctionLength = sizeof(struct usb_cdc_header_descriptor),
+// 		.bDescriptorType = CS_INTERFACE,
+// 		.bDescriptorSubtype = USB_CDC_TYPE_HEADER,
+// 		.bcdCDC = 0x0110,
+// 	},
+// 	.call_mgmt = {
+// 		.bFunctionLength =
+// 			sizeof(struct usb_cdc_call_management_descriptor),
+// 		.bDescriptorType = CS_INTERFACE,
+// 		.bDescriptorSubtype = USB_CDC_TYPE_CALL_MANAGEMENT,
+// 		.bmCapabilities = 0,
+// 		.bDataInterface = 1,
+// 	},
+// 	.acm = {
+// 		.bFunctionLength = sizeof(struct usb_cdc_acm_descriptor),
+// 		.bDescriptorType = CS_INTERFACE,
+// 		.bDescriptorSubtype = USB_CDC_TYPE_ACM,
+// 		.bmCapabilities = 2, /* SET_LINE_CODING supported */
+// 	},
+// 	.cdc_union = {
+// 		.bFunctionLength = sizeof(struct usb_cdc_union_descriptor),
+// 		.bDescriptorType = CS_INTERFACE,
+// 		.bDescriptorSubtype = USB_CDC_TYPE_UNION,
+// 		.bControlInterface = 0,
+// 		.bSubordinateInterface0 = 1,
+// 	 }
+// };
 
-static const struct usb_interface_descriptor gdb_comm_iface[] = {{
-	.bLength = USB_DT_INTERFACE_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 0,
-	.bAlternateSetting = 0,
-	.bNumEndpoints = 1,
-	.bInterfaceClass = USB_CLASS_CDC,
-	.bInterfaceSubClass = USB_CDC_SUBCLASS_ACM,
-	.bInterfaceProtocol = USB_CDC_PROTOCOL_AT,
-	.iInterface = 4,
+// static const struct usb_interface_descriptor gdb_comm_iface[] = {{
+// 	.bLength = USB_DT_INTERFACE_SIZE,
+// 	.bDescriptorType = USB_DT_INTERFACE,
+// 	.bInterfaceNumber = 0,
+// 	.bAlternateSetting = 0,
+// 	.bNumEndpoints = 1,
+// 	.bInterfaceClass = USB_CLASS_CDC,
+// 	.bInterfaceSubClass = USB_CDC_SUBCLASS_ACM,
+// 	.bInterfaceProtocol = USB_CDC_PROTOCOL_AT,
+// 	.iInterface = 4,
 
-	.endpoint = gdb_comm_endp,
+// 	.endpoint = gdb_comm_endp,
 
-	.extra = &gdb_cdcacm_functional_descriptors,
-	.extralen = sizeof(gdb_cdcacm_functional_descriptors)
-}};
+// 	.extra = &gdb_cdcacm_functional_descriptors,
+// 	.extralen = sizeof(gdb_cdcacm_functional_descriptors)
+// }};
 
-static const struct usb_interface_descriptor gdb_data_iface[] = {{
-	.bLength = USB_DT_INTERFACE_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 1,
-	.bAlternateSetting = 0,
-	.bNumEndpoints = 2,
-	.bInterfaceClass = USB_CLASS_DATA,
-	.bInterfaceSubClass = 0,
-	.bInterfaceProtocol = 0,
-	.iInterface = 0,
+// static const struct usb_interface_descriptor gdb_data_iface[] = {{
+// 	.bLength = USB_DT_INTERFACE_SIZE,
+// 	.bDescriptorType = USB_DT_INTERFACE,
+// 	.bInterfaceNumber = 1,
+// 	.bAlternateSetting = 0,
+// 	.bNumEndpoints = 2,
+// 	.bInterfaceClass = USB_CLASS_DATA,
+// 	.bInterfaceSubClass = 0,
+// 	.bInterfaceProtocol = 0,
+// 	.iInterface = 0,
 
-	.endpoint = gdb_data_endp,
-}};
+// 	.endpoint = gdb_data_endp,
+// }};
 
-static const struct usb_iface_assoc_descriptor gdb_assoc = {
-	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 0,
-	.bInterfaceCount = 2,
-	.bFunctionClass = USB_CLASS_CDC,
-	.bFunctionSubClass = USB_CDC_SUBCLASS_ACM,
-	.bFunctionProtocol = USB_CDC_PROTOCOL_AT,
-	.iFunction = 0,
-};
+// static const struct usb_iface_assoc_descriptor gdb_assoc = {
+// 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
+// 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
+// 	.bFirstInterface = 0,
+// 	.bInterfaceCount = 2,
+// 	.bFunctionClass = USB_CLASS_CDC,
+// 	.bFunctionSubClass = USB_CDC_SUBCLASS_ACM,
+// 	.bFunctionProtocol = USB_CDC_PROTOCOL_AT,
+// 	.iFunction = 0,
+// };
 
 /* Serial ACM interface */
 static const struct usb_endpoint_descriptor uart_comm_endp[] = {{
@@ -276,40 +281,40 @@ static const struct usb_iface_assoc_descriptor uart_assoc = {
 	.iFunction = 0,
 };
 
-const struct usb_dfu_descriptor dfu_function = {
-	.bLength = sizeof(struct usb_dfu_descriptor),
-	.bDescriptorType = DFU_FUNCTIONAL,
-	.bmAttributes = USB_DFU_CAN_DOWNLOAD | USB_DFU_WILL_DETACH,
-	.wDetachTimeout = 255,
-	.wTransferSize = 1024,
-	.bcdDFUVersion = 0x011A,
-};
+// const struct usb_dfu_descriptor dfu_function = {
+// 	.bLength = sizeof(struct usb_dfu_descriptor),
+// 	.bDescriptorType = DFU_FUNCTIONAL,
+// 	.bmAttributes = USB_DFU_CAN_DOWNLOAD | USB_DFU_WILL_DETACH,
+// 	.wDetachTimeout = 255,
+// 	.wTransferSize = 1024,
+// 	.bcdDFUVersion = 0x011A,
+// };
 
-const struct usb_interface_descriptor dfu_iface = {
-	.bLength = USB_DT_INTERFACE_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = DFU_IF_NO,
-	.bAlternateSetting = 0,
-	.bNumEndpoints = 0,
-	.bInterfaceClass = 0xFE,
-	.bInterfaceSubClass = 1,
-	.bInterfaceProtocol = 1,
-	.iInterface = 6,
+// const struct usb_interface_descriptor dfu_iface = {
+// 	.bLength = USB_DT_INTERFACE_SIZE,
+// 	.bDescriptorType = USB_DT_INTERFACE,
+// 	.bInterfaceNumber = DFU_IF_NO,
+// 	.bAlternateSetting = 0,
+// 	.bNumEndpoints = 0,
+// 	.bInterfaceClass = 0xFE,
+// 	.bInterfaceSubClass = 1,
+// 	.bInterfaceProtocol = 1,
+// 	.iInterface = 6,
 
-	.extra = &dfu_function,
-	.extralen = sizeof(dfu_function),
-};
+// 	.extra = &dfu_function,
+// 	.extralen = sizeof(dfu_function),
+// };
 
-static const struct usb_iface_assoc_descriptor dfu_assoc = {
-	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 4,
-	.bInterfaceCount = 1,
-	.bFunctionClass = 0xFE,
-	.bFunctionSubClass = 1,
-	.bFunctionProtocol = 1,
-	.iFunction = 6,
-};
+// static const struct usb_iface_assoc_descriptor dfu_assoc = {
+// 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
+// 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
+// 	.bFirstInterface = 4,
+// 	.bInterfaceCount = 1,
+// 	.bFunctionClass = 0xFE,
+// 	.bFunctionSubClass = 1,
+// 	.bFunctionProtocol = 1,
+// 	.iFunction = 6,
+// };
 
 #if defined(PLATFORM_HAS_TRACESWO)
 static const struct usb_endpoint_descriptor trace_endp[] = {{
@@ -348,23 +353,23 @@ static const struct usb_iface_assoc_descriptor trace_assoc = {
 #endif
 
 static const struct usb_interface ifaces[] = {{
-	.num_altsetting = 1,
-	.iface_assoc = &gdb_assoc,
-	.altsetting = gdb_comm_iface,
-}, {
-	.num_altsetting = 1,
-	.altsetting = gdb_data_iface,
-}, {
+// 	.num_altsetting = 1,
+// 	.iface_assoc = &gdb_assoc,
+// 	.altsetting = gdb_comm_iface,
+// }, {
+// 	.num_altsetting = 1,
+// 	.altsetting = gdb_data_iface,
+// }, {
 	.num_altsetting = 1,
 	.iface_assoc = &uart_assoc,
 	.altsetting = uart_comm_iface,
 }, {
 	.num_altsetting = 1,
 	.altsetting = uart_data_iface,
-}, {
-	.num_altsetting = 1,
-	.iface_assoc = &dfu_assoc,
-	.altsetting = &dfu_iface,
+// }, {
+// 	.num_altsetting = 1,
+// 	.iface_assoc = &dfu_assoc,
+// 	.altsetting = &dfu_iface,
 #if defined(PLATFORM_HAS_TRACESWO)
 }, {
 	.num_altsetting = 1,
@@ -380,7 +385,8 @@ static const struct usb_config_descriptor config = {
 #if defined(PLATFORM_HAS_TRACESWO)
 	.bNumInterfaces = 6,
 #else
-	.bNumInterfaces = 5,
+	// .bNumInterfaces = 5,
+        .bNumInterfaces = (&ifaces)[1] - ifaces,
 #endif
 	.bConfigurationValue = 1,
 	.iConfiguration = 0,
@@ -396,24 +402,30 @@ static const char *usb_strings[] = {
 	"Black Sphere Technologies",
 	BOARD_IDENT,
 	serial_no,
-	"Black Magic GDB Server",
+	// "Black Magic GDB Server",
 	"Black Magic UART Port",
-	DFU_IDENT,
+	// DFU_IDENT,
 #if defined(PLATFORM_HAS_TRACESWO)
 	"Black Magic Trace Capture",
 #endif
+        "Too far 1",
+        "Too far 2",
+        "Too far 3",
+        "Too far 4",
+        "Too far 5",
+
 };
 
-static void dfu_detach_complete(usbd_device *dev, struct usb_setup_data *req)
-{
-	(void)dev;
-	(void)req;
+// static void dfu_detach_complete(usbd_device *dev, struct usb_setup_data *req)
+// {
+// 	(void)dev;
+// 	(void)req;
 
-	platform_request_boot();
+// 	platform_request_boot();
 
-	/* Reset core to enter bootloader */
-	scb_reset_core();
-}
+// 	/* Reset core to enter bootloader */
+// 	scb_reset_core();
+// }
 
 static int cdcacm_control_request(usbd_device *dev,
 		struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
@@ -426,12 +438,12 @@ static int cdcacm_control_request(usbd_device *dev,
 
 	switch(req->bRequest) {
 	case USB_CDC_REQ_SET_CONTROL_LINE_STATE:
-		cdcacm_set_modem_state(dev, req->wIndex, true, true);
-		/* Ignore if not for GDB interface */
-		if(req->wIndex != 0)
-			return 1;
+		// cdcacm_set_modem_state(dev, req->wIndex, true, true);
+		// /* Ignore if not for GDB interface */
+		// if(req->wIndex != 0)
+		// 	return 1;
 
-		cdcacm_gdb_dtr = req->wValue & 1;
+		// cdcacm_gdb_dtr = req->wValue & 1;
 
 		return 1;
 	case USB_CDC_REQ_SET_LINE_CODING:
@@ -446,24 +458,24 @@ static int cdcacm_control_request(usbd_device *dev,
 		default:
 			return 0;
 		}
-	case DFU_GETSTATUS:
-		if(req->wIndex == DFU_IF_NO) {
-			(*buf)[0] = DFU_STATUS_OK;
-			(*buf)[1] = 0;
-			(*buf)[2] = 0;
-			(*buf)[3] = 0;
-			(*buf)[4] = STATE_APP_IDLE;
-			(*buf)[5] = 0;	/* iString not used here */
-			*len = 6;
+	// case DFU_GETSTATUS:
+	// 	if(req->wIndex == DFU_IF_NO) {
+	// 		(*buf)[0] = DFU_STATUS_OK;
+	// 		(*buf)[1] = 0;
+	// 		(*buf)[2] = 0;
+	// 		(*buf)[3] = 0;
+	// 		(*buf)[4] = STATE_APP_IDLE;
+	// 		(*buf)[5] = 0;	/* iString not used here */
+	// 		*len = 6;
 
-			return 1;
-		}
-	case DFU_DETACH:
-		if(req->wIndex == DFU_IF_NO) {
-			*complete = dfu_detach_complete;
-			return 1;
-		}
-		return 0;
+	// 		return 1;
+	// 	}
+	// case DFU_DETACH:
+	// 	if(req->wIndex == DFU_IF_NO) {
+	// 		*complete = dfu_detach_complete;
+	// 		return 1;
+	// 	}
+	// 	return 0;
 	}
 	return 0;
 }
@@ -473,10 +485,10 @@ int cdcacm_get_config(void)
 	return configured;
 }
 
-int cdcacm_get_dtr(void)
-{
-	return cdcacm_gdb_dtr;
-}
+// int cdcacm_get_dtr(void)
+// {
+// 	return cdcacm_gdb_dtr;
+// }
 
 static void cdcacm_set_modem_state(usbd_device *dev, int iface, bool dsr, bool dcd)
 {
@@ -497,17 +509,17 @@ static void cdcacm_set_config(usbd_device *dev, uint16_t wValue)
 {
 	configured = wValue;
 
-	/* GDB interface */
-#if defined(STM32F4) || defined(LM4F)
-	usbd_ep_setup(dev, 0x01, USB_ENDPOINT_ATTR_BULK,
-	              CDCACM_PACKET_SIZE, gdb_usb_out_cb);
-#else
-	usbd_ep_setup(dev, 0x01, USB_ENDPOINT_ATTR_BULK,
-	              CDCACM_PACKET_SIZE, NULL);
-#endif
-	usbd_ep_setup(dev, 0x81, USB_ENDPOINT_ATTR_BULK,
-	              CDCACM_PACKET_SIZE, NULL);
-	usbd_ep_setup(dev, 0x82, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+// 	/* GDB interface */
+// #if defined(STM32F4) || defined(LM4F)
+// 	usbd_ep_setup(dev, 0x01, USB_ENDPOINT_ATTR_BULK,
+// 	              CDCACM_PACKET_SIZE, gdb_usb_out_cb);
+// #else
+// 	usbd_ep_setup(dev, 0x01, USB_ENDPOINT_ATTR_BULK,
+// 	              CDCACM_PACKET_SIZE, NULL);
+// #endif
+// 	usbd_ep_setup(dev, 0x81, USB_ENDPOINT_ATTR_BULK,
+// 	              CDCACM_PACKET_SIZE, NULL);
+// 	usbd_ep_setup(dev, 0x82, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
 
 	/* Serial interface */
 	usbd_ep_setup(dev, 0x03, USB_ENDPOINT_ATTR_BULK,
@@ -539,11 +551,11 @@ uint8_t usbd_control_buffer[256];
 
 void cdcacm_init(void)
 {
-	void exti15_10_isr(void);
+	// void exti15_10_isr(void);
 
 	serialno_read(serial_no);
 
-	usbdev = usbd_init(&USB_DRIVER, &dev, &config, usb_strings,
+	usbdev = usbd_init(&USB_DRIVER, &usbdd, &config, usb_strings,
 			    sizeof(usb_strings)/sizeof(char *),
 			    usbd_control_buffer, sizeof(usbd_control_buffer));
 
@@ -557,4 +569,3 @@ void USB_ISR(void)
 {
 	usbd_poll(usbdev);
 }
-
