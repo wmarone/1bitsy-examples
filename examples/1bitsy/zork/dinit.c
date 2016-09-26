@@ -44,60 +44,68 @@
     #define TEXTFILE "[flash]"
     FILE *dbfile;
 
-    typedef struct textarray_cookie {
-        bool ok;
-        size_t pos;
-    } textarray_cookie;
+    #if 0
+        typedef struct textarray_cookie {
+            bool ok;
+            size_t pos;
+        } textarray_cookie;
 
-    static ssize_t
-    textarray_reader(void *cookie, char *buffer, size_t size)
-    {
-        textarray_cookie *cp = cookie;
-        assert(cp->ok);
-        assert(cp->pos <= textarray_size);
-        if (size > textarray_size - cp->pos)
-            size = textarray_size - cp->pos;
-        memcpy(buffer, textarray + cp->pos, size);
-        cp->pos += size;
-        return (ssize_t)size;
-    }
-
-    static int textarray_seeker(void *cookie, off_t *position, int whence)
-    {
-        textarray_cookie *cp = cookie;
-        off_t new_pos;
-        switch (whence) {
-
-        case SEEK_SET:
-            new_pos = *position;
-            break;
-
-        case SEEK_CUR:
-            new_pos = cp->pos + *position;
-            break;
-
-        case SEEK_END:
-            new_pos = (off_t)cp->pos + (off_t)textarray_size + *position;
-            break;
-
-        default:
-            assert(0 && "unknown whence value");
+        static ssize_t
+        textarray_reader(void *cookie, char *buffer, size_t size)
+        {
+            textarray_cookie *cp = cookie;
+            assert(cp->ok);
+            assert(cp->pos <= textarray_size);
+            if (size > textarray_size - cp->pos)
+                size = textarray_size - cp->pos;
+            memcpy(buffer, textarray + cp->pos, size);
+            cp->pos += size;
+            return (ssize_t)size;
         }
-        if (new_pos < 0 || (size_t)new_pos > textarray_size)
-            return -1;
-        cp->pos = *position = new_pos;
-        return 0;
-    }
 
-    static FILE *open_textarray(void)
-    {
-        static cookie_io_functions_t fns;
-        fns.read = textarray_reader;
-        fns.seek = textarray_seeker;
+        static int textarray_seeker(void *cookie, off_t *position, int whence)
+        {
+            textarray_cookie *cp = cookie;
+            off_t new_pos;
+            switch (whence) {
 
-        FILE *f = fopencookie(NULL, "rb", fns);
-        return f;
-    }
+            case SEEK_SET:
+                new_pos = *position;
+                break;
+
+            case SEEK_CUR:
+                new_pos = cp->pos + *position;
+                break;
+
+            case SEEK_END:
+                new_pos = (off_t)cp->pos + (off_t)textarray_size + *position;
+                break;
+
+            default:
+                assert(0 && "unknown whence value");
+            }
+            if (new_pos < 0 || (size_t)new_pos > textarray_size)
+                return -1;
+            cp->pos = *position = new_pos;
+            return 0;
+        }
+
+        static FILE *open_textarray(void)
+        {
+            static cookie_io_functions_t fns;
+            fns.read = textarray_reader;
+            fns.seek = textarray_seeker;
+
+            FILE *f = fopencookie(NULL, "rb", fns);
+            return f;
+        }
+    #else
+        // AAaargjh!  This is much easier.
+        static FILE *open_textarray(void)
+        {
+            return fmemopen(textarray, textarray_size, "rb");
+        }
+    #endif
 
 #endif  // XXX kbob
 
