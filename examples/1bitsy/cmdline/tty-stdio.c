@@ -1,11 +1,11 @@
-#include "serial-stdio.h"
+#include "tty-stdio.h"
 
 #include <stdio.h>
 #include <unistd.h>
 
 #include "tty.h"
 
-static ssize_t serial_read(void *cookie, char *buffer, size_t size)
+static ssize_t tty_read(void *cookie, char *buffer, size_t size)
 {
     tty *tp = cookie;
     size_t n = 0;
@@ -20,17 +20,17 @@ static ssize_t serial_read(void *cookie, char *buffer, size_t size)
     return n;
 }
 
-static ssize_t serial_write(void *cookie, const char *buffer, size_t size)
+static ssize_t tty_write(void *cookie, const char *buffer, size_t size)
 {
     tty *tp = cookie;
     tty_write_chars(tp, buffer, size);
     return size;
 }
 
-void serial_stdio_init(tty *tp)
+void tty_stdio_init(tty *tp)
 {
     static cookie_io_functions_t stdin_fns = {
-        .read  = serial_read,
+        .read  = tty_read,
         .write = NULL,
         .seek  = NULL,
         .close = NULL,
@@ -39,7 +39,7 @@ void serial_stdio_init(tty *tp)
 
     static cookie_io_functions_t stdout_fns = {
         .read  = NULL,
-        .write = serial_write,
+        .write = tty_write,
         .seek  = NULL,
         .close = NULL,
     };
@@ -48,7 +48,7 @@ void serial_stdio_init(tty *tp)
 
     static cookie_io_functions_t stderr_fns = {
         .read  = NULL,
-        .write = serial_write,
+        .write = tty_write,
         .seek  = NULL,
         .close = NULL,
     };

@@ -17,7 +17,7 @@
 ## along with this library.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-SOURCES  := cdcacm.c led.c serial-stdio.c systick.c tty.c
+SOURCES  := cdcacm.c led.c systick.c tty.c tty-stdio.c
 OBJS     := $(SOURCES:.c=.o)
 BINARY   := cmdline
 LDSCRIPT := ../stm32f4-1bitsy.ld

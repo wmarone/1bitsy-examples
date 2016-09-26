@@ -7,7 +7,7 @@
 // application headers
 #include "cdcacm.h"
 #include "led.h"
-#include "serial-stdio.h"
+#include "tty-stdio.h"
 #include "systick.h"
 #include "tty.h"
 
@@ -41,8 +41,8 @@ static void setup(void)
     // USB CDC/ACM
     cdcacm_init();
 
-    // stdio
-    serial_stdio_init(&my_tty);
+    // TTY stdio
+    tty_stdio_init(&my_tty);
 
     // connect TTY to USB.
     cdcacm_register_receive_callback(usb_to_tty);
