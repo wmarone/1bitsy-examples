@@ -22,8 +22,3 @@ void zork_main(void)
     exit_();
 /* 						!DONE */
 } /* MAIN__ */
-
-// extern void _fini(void);
-// extern void _fini(void)
-// {
-// }

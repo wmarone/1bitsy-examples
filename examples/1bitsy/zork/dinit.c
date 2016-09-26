@@ -103,7 +103,7 @@
         // AAaargjh!  This is much easier.
         static FILE *open_textarray(void)
         {
-            return fmemopen(textarray, textarray_size, "rb");
+            return fmemopen((char *)textarray, textarray_size, "rb");
         }
     #endif
 
