@@ -1,251 +1,146 @@
-/*
- * This file is part of the libopencm3 project.
- *
- * Copyright (C) 2010 Gareth McMullin <gareth@blacksphere.co.nz>
- *
- * This library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library.  If not, see <http://www.gnu.org/licenses/>.
- */
-
+// C/POSIX headers
+#include <stdio.h>
 #include <stdlib.h>
+
+// libopencm3 headers
 #include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/usb/usbd.h>
-#include <libopencm3/usb/cdc.h>
-#include <libopencm3/cm3/scb.h>
+// #include <libopencm3/stm32/gpio.h>
+// #include <libopencm3/usb/usbd.h>
 
-static const struct usb_device_descriptor dev = {
-	.bLength = USB_DT_DEVICE_SIZE,
-	.bDescriptorType = USB_DT_DEVICE,
-	.bcdUSB = 0x0200,
-	.bDeviceClass = USB_CLASS_CDC,
-	.bDeviceSubClass = 0,
-	.bDeviceProtocol = 0,
-	.bMaxPacketSize0 = 64,
-	.idVendor = 0x0483,
-	.idProduct = 0x5740,
-	.bcdDevice = 0x0200,
-	.iManufacturer = 1,
-	.iProduct = 2,
-	.iSerialNumber = 3,
-	.bNumConfigurations = 1,
-};
+// application headers
+#include "cdcacm.h"
+#include "led.h"
+#include "serial-stdio.h"
+#include "systick.h"
+#include "tty.h"
 
-/*
- * This notification endpoint isn't implemented. According to CDC spec it's
- * optional, but its absence causes a NULL pointer dereference in the
- * Linux cdc_acm driver.
- */
-static const struct usb_endpoint_descriptor comm_endp[] = {{
-	.bLength = USB_DT_ENDPOINT_SIZE,
-	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x83,
-	.bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
-	.wMaxPacketSize = 16,
-	.bInterval = 255,
-} };
+// static void cdcacm_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
+// {
+// 	(void)ep;
 
-static const struct usb_endpoint_descriptor data_endp[] = {{
-	.bLength = USB_DT_ENDPOINT_SIZE,
-	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x01,
-	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
-	.wMaxPacketSize = 64,
-	.bInterval = 1,
-}, {
-	.bLength = USB_DT_ENDPOINT_SIZE,
-	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x82,
-	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
-	.wMaxPacketSize = 64,
-	.bInterval = 1,
-} };
+// 	char buf[64];
+// 	int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
 
-static const struct {
-	struct usb_cdc_header_descriptor header;
-	struct usb_cdc_call_management_descriptor call_mgmt;
-	struct usb_cdc_acm_descriptor acm;
-	struct usb_cdc_union_descriptor cdc_union;
-} __attribute__((packed)) cdcacm_functional_descriptors = {
-	.header = {
-		.bFunctionLength = sizeof(struct usb_cdc_header_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_HEADER,
-		.bcdCDC = 0x0110,
-	},
-	.call_mgmt = {
-		.bFunctionLength =
-			sizeof(struct usb_cdc_call_management_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_CALL_MANAGEMENT,
-		.bmCapabilities = 0,
-		.bDataInterface = 1,
-	},
-	.acm = {
-		.bFunctionLength = sizeof(struct usb_cdc_acm_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_ACM,
-		.bmCapabilities = 0,
-	},
-	.cdc_union = {
-		.bFunctionLength = sizeof(struct usb_cdc_union_descriptor),
-		.bDescriptorType = CS_INTERFACE,
-		.bDescriptorSubtype = USB_CDC_TYPE_UNION,
-		.bControlInterface = 0,
-		.bSubordinateInterface0 = 1,
-	 }
-};
+// 	if (len) {
+// 		gpio_toggle(GPIOA, GPIO8);
+// 		while (usbd_ep_write_packet(usbd_dev, 0x82, buf, len) == 0);
+// 	}
+// }
 
-static const struct usb_interface_descriptor comm_iface[] = {{
-	.bLength = USB_DT_INTERFACE_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 0,
-	.bAlternateSetting = 0,
-	.bNumEndpoints = 1,
-	.bInterfaceClass = USB_CLASS_CDC,
-	.bInterfaceSubClass = USB_CDC_SUBCLASS_ACM,
-	.bInterfaceProtocol = USB_CDC_PROTOCOL_AT,
-	.iInterface = 0,
+// static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
+// {
+// 	(void)wValue;
 
-	.endpoint = comm_endp,
+// 	usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
+// 			cdcacm_data_rx_cb);
+// 	usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
+// 	usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
 
-	.extra = &cdcacm_functional_descriptors,
-	.extralen = sizeof(cdcacm_functional_descriptors)
-} };
+// 	usbd_register_control_callback(
+// 				usbd_dev,
+// 				USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
+// 				USB_REQ_TYPE_TYPE | USB_REQ_TYPE_RECIPIENT,
+// 				cdcacm_control_request);
+// }
 
-static const struct usb_interface_descriptor data_iface[] = {{
-	.bLength = USB_DT_INTERFACE_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 1,
-	.bAlternateSetting = 0,
-	.bNumEndpoints = 2,
-	.bInterfaceClass = USB_CLASS_DATA,
-	.bInterfaceSubClass = 0,
-	.bInterfaceProtocol = 0,
-	.iInterface = 0,
+// int main(void)
+// {
+// #if 0
+// 	usbd_device *usbd_dev;
+// #endif
 
-	.endpoint = data_endp,
-} };
+// 	rcc_clock_setup_hse_3v3(&rcc_hse_25mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
 
-static const struct usb_interface ifaces[] = {{
-	.num_altsetting = 1,
-	.altsetting = comm_iface,
-}, {
-	.num_altsetting = 1,
-	.altsetting = data_iface,
-} };
+// 	rcc_periph_clock_enable(RCC_GPIOA);
 
-static const struct usb_config_descriptor config = {
-	.bLength = USB_DT_CONFIGURATION_SIZE,
-	.bDescriptorType = USB_DT_CONFIGURATION,
-	.wTotalLength = 0,
-	.bNumInterfaces = 2,
-	.bConfigurationValue = 1,
-	.iConfiguration = 0,
-	.bmAttributes = 0x80,
-	.bMaxPower = 0x32,
+// 	gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO8);
 
-	.interface = ifaces,
-};
+// #if 0
+// 	// rcc_periph_clock_enable(RCC_OTGFS);
 
-static const char * usb_strings[] = {
-	"Black Sphere Technologies",
-	"CDC-ACM Demo",
-	"DEMO",
-};
+// 	// gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
+// 	// 		GPIO9 | GPIO11 | GPIO12);
+// 	// gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
 
-/* Buffer to be used for control requests. */
-uint8_t usbd_control_buffer[128];
+// 	// usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config,
+// 	// 		usb_strings, 3,
+// 	// 		usbd_control_buffer, sizeof(usbd_control_buffer));
 
-static int cdcacm_control_request(usbd_device *usbd_dev,
-	struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
-	void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req))
+// 	// usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
+
+// 	// while (1) {
+// 	// 	usbd_poll(usbd_dev);
+// 	// }
+// #else
+//         cdcacm_setup();
+// #endif
+// }
+
+static tty my_tty;
+
+static void usb_to_tty(const char *buf, size_t size)
 {
-	(void)complete;
-	(void)buf;
-	(void)usbd_dev;
-
-	switch (req->bRequest) {
-	case USB_CDC_REQ_SET_CONTROL_LINE_STATE: {
-		/*
-		 * This Linux cdc_acm driver requires this to be implemented
-		 * even though it's optional in the CDC spec, and we don't
-		 * advertise it in the ACM functional descriptor.
-		 */
-		return 1;
-		}
-	case USB_CDC_REQ_SET_LINE_CODING:
-		if (*len < sizeof(struct usb_cdc_line_coding)) {
-			return 0;
-		}
-
-		return 1;
-	}
-	return 0;
+    tty_receive_chars(&my_tty, buf, size);
 }
 
-static void cdcacm_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
+static void tty_to_usb(tty *tp, const char *buf, size_t size)
 {
-	(void)ep;
-
-	char buf[64];
-	int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
-
-	if (len) {
-		gpio_toggle(GPIOA, GPIO8);
-		while (usbd_ep_write_packet(usbd_dev, 0x82, buf, len) == 0);
-	}
+    (void)tp;
+    cdcacm_send_chars(buf, size);
 }
 
-static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
+static void setup(void)
 {
-	(void)wValue;
+    // rcc
+    rcc_clock_setup_hse_3v3(&rcc_hse_25mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
 
-	usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
-			cdcacm_data_rx_cb);
-	usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
-	usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+    // systick
+    systick_init();
 
-	usbd_register_control_callback(
-				usbd_dev,
-				USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
-				USB_REQ_TYPE_TYPE | USB_REQ_TYPE_RECIPIENT,
-				cdcacm_control_request);
+    // LED
+    LED_init();
+
+    // tty
+    tty_init(&my_tty);
+
+    // USB CDC/ACM
+    cdcacm_init();
+
+    // stdio
+    serial_stdio_init(&my_tty);
+
+    // connect TTY to USB.
+    cdcacm_register_receive_callback(usb_to_tty);
+    tty_register_send_callback(&my_tty, tty_to_usb);
+
+    // wait for user to connect.
+    cdcacm_open();
+}
+
+// Sample application just uses Standard I/O.
+static void run(void)
+{
+    printf("Welcome to Pointlessness!\n");
+    printf("You can type things.\n");
+    while (1) {
+        char line[20];          // short, easily overflowed.
+
+        printf("> ");
+        fflush(stdout);
+        if (!fgets(line, sizeof line, stdin))
+            fprintf(stderr, "error\n");
+        else {
+            printf("You said, \"");
+            for (char *s = line; *s; s++)
+                if (*s != '\n')
+                    putchar(*s);
+            printf("\"\n");
+        }
+    }
 }
 
 int main(void)
 {
-	usbd_device *usbd_dev;
-
-	rcc_clock_setup_hse_3v3(&rcc_hse_25mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
-
-	rcc_periph_clock_enable(RCC_GPIOA);
-
-	gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO8);
-
-	rcc_periph_clock_enable(RCC_OTGFS);
-
-	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
-			GPIO9 | GPIO11 | GPIO12);
-	gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
-
-	usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config,
-			usb_strings, 3,
-			usbd_control_buffer, sizeof(usbd_control_buffer));
-
-	usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
-
-	while (1) {
-		usbd_poll(usbd_dev);
-	}
+    setup();
+    run();
 }

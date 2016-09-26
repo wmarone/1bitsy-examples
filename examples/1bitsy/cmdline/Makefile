@@ -17,11 +17,10 @@
 ## along with this library.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-SOURCES := cdcacm.c usbuart.c serialno.c
-OBJS := $(SOURCES:.c=.o)
-BINARY = cmdline
-
-LDSCRIPT = ../stm32f4-1bitsy.ld
+SOURCES  := cdcacm.c led.c serial-stdio.c systick.c tty.c
+OBJS     := $(SOURCES:.c=.o)
+BINARY   := cmdline
+LDSCRIPT := ../stm32f4-1bitsy.ld
 
 include ../Makefile.include
 
