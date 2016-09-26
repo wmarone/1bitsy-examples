@@ -163,7 +163,7 @@ static const struct usb_config_descriptor config = {
 static const char * usb_strings[] = {
 	"1BitSquared",
 	"1Bitsy + cmdline",
-	"DEMO",
+	"DEMO ",
 };
 
 static usbd_device *usbd_dev;
@@ -181,17 +181,6 @@ static int cdcacm_control_request(usbd_device *usbdev,
 	(void)buf;
 	(void)usbdev;
 
-        // #include <stdio.h>
-        // static uint16_t xxx[100];
-        // static size_t ndx = 1;
-        // if (ndx < 100 && req->bRequest == 0x22)
-        //     xxx[ndx++] = req->wValue;
-        // if (req->bRequest == 0x20)
-        //     xxx[0]++;
-        // printf("LS:");
-        // for (size_t i = 0; i < ndx; i++)
-        //     printf(" %5d", xxx[i]);
-        // printf("\n");
 	switch (req->bRequest) {
 	case USB_CDC_REQ_SET_CONTROL_LINE_STATE: {
 		/*
@@ -244,20 +233,6 @@ static void cdcacm_set_config(usbd_device *usbdev, uint16_t wValue)
 
 void cdcacm_init(void)
 {
-#if 0
-	// void exti15_10_isr(void);
-
-	serialno_read(serial_no);
-
-	usbdev = usbd_init(&USB_DRIVER, &usbdd, &config, usb_strings,
-			    sizeof(usb_strings)/sizeof(char *),
-			    usbd_control_buffer, sizeof(usbd_control_buffer));
-
-	usbd_register_set_config_callback(usbdev, cdcacm_set_config);
-
-	nvic_set_priority(USB_IRQ, IRQ_PRI_USB);
-	nvic_enable_irq(USB_IRQ);
-#else
 	rcc_periph_clock_enable(RCC_OTGFS);
 
 	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
@@ -270,9 +245,7 @@ void cdcacm_init(void)
 
 	usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
         
-	// nvic_set_priority(NVIC_OTG_FS_IRQ, IRQ_PRI_USB);
 	nvic_enable_irq(NVIC_OTG_FS_IRQ);
-#endif
 }
 
 void cdcacm_register_receive_callback(cdcacm_receive_callback *cb)
@@ -282,6 +255,7 @@ void cdcacm_register_receive_callback(cdcacm_receive_callback *cb)
 
 void cdcacm_open(void)
 {
+    // 0x01: DTE present
     while ((line_state & 0x01) == 0)
         continue;
     delay(500);
@@ -298,7 +272,5 @@ void cdcacm_send_chars(const char *buf, size_t size)
 
 void otg_fs_isr(void)
 {
-    // OTG_FS_GOTGINT = 0;         // ack all interrupts
-    // OTG_FS_GINTSTS = 0xF030FC0A;
     usbd_poll(usbd_dev);
 }

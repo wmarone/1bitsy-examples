@@ -44,7 +44,7 @@ void serial_stdio_init(tty *tp)
         .close = NULL,
     };
     stdout = fopencookie(tp, "w", stdout_fns);
-    int r = setvbuf(stdout, tp->write_buffer, _IOLBF, sizeof tp->write_buffer);
+    (void)setvbuf(stdout, tp->write_buffer, _IOLBF, sizeof tp->write_buffer);
 
     static cookie_io_functions_t stderr_fns = {
         .read  = NULL,
@@ -53,6 +53,5 @@ void serial_stdio_init(tty *tp)
         .close = NULL,
     };
     stderr = fopencookie(tp, "w", stderr_fns);
-    r = setvbuf(stderr, NULL, _IONBF, 0);
-    printf("r = %d\n", r);
+    (void)setvbuf(stderr, NULL, _IONBF, 0);
 }

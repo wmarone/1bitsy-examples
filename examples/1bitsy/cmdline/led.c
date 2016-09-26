@@ -5,7 +5,6 @@
 
 #define LED_PORT GPIOA
 #define LED_PIN  GPIO8
-
 #define RCC_LED_PORT RCC_GPIOA
 
 void LED_init(void)

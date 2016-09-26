@@ -30,7 +30,7 @@ int tty_read_char(tty *tp)
 
 // The TTY read buffer has two parts: chars that are ready to be read,
 // and chars that are not because an EOL hasn't been received.  The
-// latter are called "pre-read" and may be erased by BS or DEL.
+// latter are called "pre-read" and may be erased by BS, DEL or Ctrl-U.
 
 static void enqueue_pre_read_char(tty *tp, char c)
 {
