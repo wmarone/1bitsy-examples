@@ -1,0 +1,24 @@
+# Print BMPM version
+monitor version
+# To make sure the target is not in a "strange" mode we tell BMPM to reset the
+# target using the reset pin.
+mon connect_srst enable
+# Enable target power
+mon tpwr enable
+# Scan for devices using SWD interface
+monitor swdp_scan
+# Attach to the first device
+attach 1
+# Make a sound
+#shell paplay /usr/share/sounds/ubuntu/stereo/message.ogg # Linux
+#shell afplay /System/Library/Sounds/Pop.aiff # MacOS
+# Load the binary into the flash
+load
+# Check if the flash matches the binary
+compare-sections
+# Reset and exit
+kill
+# Tell user we were successful
+echo "Upload success!!!"
+# Sleep for a while
+shell sleep 10
