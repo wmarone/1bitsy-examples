@@ -1,3 +1,6 @@
+// launch factory bootloader if powered up with the user button depressed
+#include "../common/button_boot.h"
+
 // C/POSIX headers
 #include <stdio.h>
 
@@ -55,6 +58,8 @@ static void setup(void)
 
 int main(void)
 {
+    button_boot();
+
     setup();
     zork_main();
     return 0;
