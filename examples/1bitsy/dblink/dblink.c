@@ -113,7 +113,7 @@ static void update_blink(uint32_t msec_time)
         on = true;
         trigger_count--;
     }
-    if (msec_time & 0x1)
+    if (msec_time & 0x21)
         on = false;
     if (on)
         gpio_clear(GPIOA, GPIO8); // low is LED on.
