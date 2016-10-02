@@ -10,7 +10,7 @@
 // application headers
 #include "cdcacm.h"
 #include "funcs.h"
-#include "led.h"
+#include "led-ping.h"
 #include "tty-stdio.h"
 #include "systick.h"
 #include "tty.h"
@@ -36,8 +36,8 @@ static void setup(void)
     // systick
     systick_init();
 
-    // LED
-    LED_init();
+    // LED ping
+    LED_ping_init();
 
     // tty
     tty_init(&my_tty);

@@ -19,6 +19,7 @@
 
 #include "cdcacm.h"
 #include "systick.h"
+#include "LED-ping.h"
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -209,7 +210,7 @@ static void cdcacm_data_rx_cb(usbd_device *usbdev, uint8_t ep)
 	int len = usbd_ep_read_packet(usbdev, 0x01, buf, 64);
 
 	if (len) {
-		gpio_toggle(GPIOA, GPIO8);
+                trigger_LED_ping();
                 if (receive_callback)
                     (*receive_callback)(buf, len);
 	}
