@@ -97,7 +97,7 @@ static void tim_setup(void)
 	* - Direction up
 	*/
 	timer_set_mode(TIM1, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
-	timer_set_prescaler(TIM1, 0);
+	timer_set_prescaler(TIM1, 2);
 	timer_set_repetition_counter(TIM1, 0);
 	/* Enable preload. */
 	timer_disable_preload(TIM1);
