@@ -1102,7 +1102,7 @@ static void fill_triangle_aa(pixtile *tile,
 
 #define ROTATION_RATE 0.005      // radians/frame
 #define OPACITY_RATE  0.020      // alpha/frame
-#define STAR_RADIUS   (0.44 * MIN(SCREEN_HEIGHT, SCREEN_WIDTH))
+#define STAR_RADIUS   (0.24 * MIN(SCREEN_HEIGHT, SCREEN_WIDTH))
 #define FG_COLOR      0xffff
 #define BG_COLOR      0x0802
 #define CENTER_X_MIN (STAR_RADIUS - 50)
@@ -1245,11 +1245,11 @@ static const mode_settings demo_modes[];
 static void draw_background(pixtile *tile)
 {
     static size_t bg_offset;
-    static int alpha;
-    static int inc = +1;
+    static int alpha = 0xFF;
+    static int inc = 0;
 
     if (tile->y == 0) {
-        bg_offset = (bg_offset + 5) % BG_PIXMAP_WIDTH;
+        bg_offset = (bg_offset + 1) % BG_PIXMAP_WIDTH;
         alpha += inc;
         if (alpha > 0xFF) {
             alpha = 0x1fe - alpha;
@@ -1298,12 +1298,12 @@ static void draw_everything(pixtile *tile, const mode_settings *mode)
 
 static const mode_settings demo_modes[] = {
 //    bg_color  fg_color  tx_color  op               inst      inst_anim
-    { 0x000000, 0xff0000, 0xffff00, draw_outline,    &pb2aa,   TA_DELAY   },
-    { 0x000018, 0x00ff00, 0xff00ff, draw_outline_aa, &pb2fade, TA_DELAY   },
-    { 0xffffff, 0x0000ff, 0x003333, draw_outline_fa, &pb2fill, TA_FADE    },
-    { 0x080018, 0xffff00, 0x00ff00, draw_filled,     &pb2aa,   TA_FADE    },
-    { 0x002000, 0xff00ff, 0xffff00, draw_filled_aa,  &pb2fade, TA_FADE    },
-    { 0x550000, 0x00ffff, 0x0000ff, draw_filled_fa,  &pb4more, TA_FADE    },
+    { 0x000000, 0xEA0034, 0xffff00, draw_outline,    &pb2aa,   TA_DELAY   },
+    { 0x000018, 0x9AF000, 0xff00ff, draw_outline_aa, &pb2fade, TA_DELAY   },
+    { 0xffffff, 0x0047BD, 0x003333, draw_outline_fa, &pb2fill, TA_FADE    },
+    { 0x080018, 0xffe63b, 0x00ff00, draw_filled,     &pb2aa,   TA_FADE    },
+    { 0x002000, 0xcc72f5, 0xffff00, draw_filled_aa,  &pb2fade, TA_FADE    },
+    { 0x550000, 0xFD47A3, 0x0000ff, draw_filled_fa,  &pb4more, TA_FADE    },
     { 0xffffff, 0x110000, 0x223322, draw_everything, &pb4less, TA_RAINBOW },
 };
 static const size_t mode_count = (&demo_modes)[1] - demo_modes;
@@ -1338,31 +1338,31 @@ static void setup_animation(void)
                     OPACITY_RATE);
 
     init_anim_state(&anim_states[1],
-                    0.34 * SCREEN_WIDTH,
+                    0.15 * SCREEN_WIDTH,
                     (point) { { 1.5, 1.5 } },
                     -0.003,
                     0.030);
 
     init_anim_state(&anim_states[2],
-                    0.34 * SCREEN_WIDTH,
+                    0.15 * SCREEN_WIDTH,
                     (point) { { 1.5, -1.5 } },
                     +0.004,
                     0.030);
 
     init_anim_state(&anim_states[3],
-                    0.24 * SCREEN_WIDTH,
+                    0.15 * SCREEN_WIDTH,
                     (point) { { -1, 0.5 } },
                     -0.008,
                     0.030);
 
     init_anim_state(&anim_states[4],
-                    0.48 * SCREEN_WIDTH,
+                    0.15 * SCREEN_WIDTH,
                     (point) { { -1, -1.5 } },
                     +0.002,
                     0.030);
 
     init_anim_state(&anim_states[5],
-                    0.40 * SCREEN_WIDTH,
+                    0.15 * SCREEN_WIDTH,
                     (point) { { 1.0, -1.1 } },
                     +0.003,
                     0.040);

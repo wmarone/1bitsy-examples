@@ -30,7 +30,7 @@ V        := 1
 CFLAGS :=
 include ../Makefile.include
 CPPFLAGS += -I.
-OPT      := -O3
+OPT      := -O0
 cflags   := $(filter_out -O%, $(CFLAGS)) -Werror -g
 CFLAGS    = $(cflags) $(OPT)
 

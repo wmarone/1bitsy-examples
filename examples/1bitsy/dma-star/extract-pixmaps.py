@@ -3,11 +3,11 @@
 from itertools import groupby
 import sys
 
-import PIL.Image
+from PIL import Image
 
 white_pixel = 255
 
-img = PIL.Image.open('pixmaps/text-snips.png')
+img = Image.open('pixmaps/text-snips.png')
 gray = img.convert('L')
 pix = gray.load()
 w, h = gray.size
@@ -83,8 +83,9 @@ def pack_rgb565(tup):
             tup[1] >> 2 <<  5 |
             tup[2] >> 3 <<  0)
 
-bg_path = 'pixmaps/water-abstract-water-turquoise-repeating-image.png'
-bg_img = PIL.Image.open(bg_path)
+#bg_path = 'pixmaps/water-abstract-water-turquoise-repeating-image.png'
+bg_path = 'pixmaps/magic-cliffs-narrow3.png'
+bg_img = Image.open(bg_path)
 bg_pix = bg_img.load()
 bg_w, bg_h = bg_img.size
 
